@@ -22,28 +22,32 @@ stages:
         codeCoverageToolOption: JaCoCo
 
     - task: CopyFiles@2
-      displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+      displayName: 'Copy Files to: $(Build.ArtifactStagingDirectory)'
       inputs:
-        SourceFolder: '$(system.defaultworkingdirectory)'
+        SourceFolder: '$(System.DefaultWorkingDirectory)'
         Contents: '**/*.jar'
-        TargetFolder: '$(build.artifactstagingdirectory)'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
     - task: PublishBuildArtifacts@1
       displayName: 'Publish Artifact: drop'
       inputs:
-        PathtoPublish: '$(build.artifactstagingdirectory)'
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
 
 - stage: Deploy
   dependsOn: Build
   jobs:
   - job: DeployJob
     steps:
+    - download: current
+      artifact: drop
+
     - task: AzureRmWebAppDeployment@4
       displayName: 'Deploy Azure App Service'
       inputs:
         azureSubscription: '$(ConnectedServiceName)'
         appType: '$(WebAppKind)'
         WebAppName: '$(WebAppName)'
-        packageForLinux: '$(System.DefaultWorkingDirectory)/_rujhaan123.gs-spring-boot/drop/app/target/gs-spring-boot-0.1.0.jar'
+        packageForLinux: '$(Pipeline.Workspace)/drop/app/target/gs-spring-boot-0.1.0.jar'
         RuntimeStack: 'TOMCAT|9.0-java11'
         StartupCommand: '$(StartupCommand)'
