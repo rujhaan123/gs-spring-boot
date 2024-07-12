@@ -1,3 +1,4 @@
+#build
 pool:
   vmImage: 'ubuntu-latest' # Hosted Ubuntu 1604
   demands: maven
@@ -23,5 +24,32 @@ steps:
     PathtoPublish: '$(build.artifactstagingdirectory)'
   condition: succeededOrFailed()
 
+#deploy
 
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ConnectedServiceName: 'bd81ff36-5055-4fe5-905d-c299ef19f4cb'
+  WebAppKind: 'webAppLinux'
+  WebAppName: 'rbtest12'
+  StartupCommand: 'java -jar /home/site/wwwroot/gs-spring-boot-0.1.0.jar --server.port=80'
+
+stages:
+- stage: Test
+  jobs:
+  - job: Deploy
+    steps:
+    - task: AzureRmWebAppDeployment@4
+      displayName: 'Deploy Azure App Service'
+      inputs:
+        azureSubscription: '$(ConnectedServiceName)'
+        appType: '$(WebAppKind)'
+        WebAppName: '$(WebAppName)'
+        packageForLinux: '$(System.DefaultWorkingDirectory)/_rujhaan123.gs-spring-boot/drop/app/target/gs-spring-boot-0.1.0.jar'
+        RuntimeStack: 'TOMCAT|9.0-java11'
+        StartupCommand: '$(StartupCommand)'
   
