@@ -1,31 +1,3 @@
-#build
-pool:
-  vmImage: 'ubuntu-latest' # Hosted Ubuntu 1604
-  demands: maven
-
-steps:
-- task: Maven@3
-  displayName: 'Maven app/pom.xml'
-  inputs:
-    mavenPomFile: 'app/pom.xml'
-    codeCoverageToolOption: JaCoCo
-
-- task: CopyFiles@2
-  displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
-  inputs:
-    SourceFolder: '$(system.defaultworkingdirectory)'
-    Contents: '**/*.jar'
-    TargetFolder: '$(build.artifactstagingdirectory)'
-  condition: succeededOrFailed()
-
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact: drop'
-  inputs:
-    PathtoPublish: '$(build.artifactstagingdirectory)'
-  condition: succeededOrFailed()
-
-#deploy
-
 trigger:
 - main
 
@@ -39,9 +11,32 @@ variables:
   StartupCommand: 'java -jar /home/site/wwwroot/gs-spring-boot-0.1.0.jar --server.port=80'
 
 stages:
-- stage: Test
+- stage: Build
   jobs:
-  - job: Deploy
+  - job: BuildJob
+    steps:
+    - task: Maven@3
+      displayName: 'Maven app/pom.xml'
+      inputs:
+        mavenPomFile: 'app/pom.xml'
+        codeCoverageToolOption: JaCoCo
+
+    - task: CopyFiles@2
+      displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+      inputs:
+        SourceFolder: '$(system.defaultworkingdirectory)'
+        Contents: '**/*.jar'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifact: drop'
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+
+- stage: Deploy
+  dependsOn: Build
+  jobs:
+  - job: DeployJob
     steps:
     - task: AzureRmWebAppDeployment@4
       displayName: 'Deploy Azure App Service'
@@ -52,4 +47,3 @@ stages:
         packageForLinux: '$(System.DefaultWorkingDirectory)/_rujhaan123.gs-spring-boot/drop/app/target/gs-spring-boot-0.1.0.jar'
         RuntimeStack: 'TOMCAT|9.0-java11'
         StartupCommand: '$(StartupCommand)'
-  
